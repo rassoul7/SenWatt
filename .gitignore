@@ -1,0 +1,11 @@
+# Fichiers système
+.DS_Store
+Thumbs.db
+
+# Fichiers de config sensibles (ne jamais pusher les vrais mots de passe)
+database/config.php
+
+# Python
+__pycache__/
+*.pyc
+*.env
