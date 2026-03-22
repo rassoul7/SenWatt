@@ -8,11 +8,11 @@ Projet IoT — Module Introduction à l'IoT | Pr Moussa DIALLO | UCAD 2025
 
 | Membre | Rôle | Branche GitHub |
 |---|---|---|
-| M1 — [Ton nom] | Chef de projet & Base de données | `feature/database` |
-| M2 — [Nom] | Node-RED Flow données & alertes | `feature/flow-mqtt-data` |
-| M3 — [Nom] | Node-RED API REST & pilotage | `feature/flow-api-pilotage` |
-| M4 — [Nom] | Dashboard Web PHP | `feature/dashboard-php` |
-| M5 — [Nom] | Simulation MQTT & Documentation | `feature/simulation-mqtt` |
+| M1 — Mouhamadou Rassoul NAME | Chef de projet & Base de données | `feature/database` |
+| M2 — Salimata Sène DIOP | Node-RED Flow données & alertes | `feature/flow-mqtt-data` |
+| M3 — Khadidiatiou NIAKH | Node-RED API REST & pilotage | `feature/flow-api-pilotage` |
+| M4 — Papa Ousmane MANÉ | Dashboard Web PHP | `feature/dashboard-php` |
+| M5 — Baye Amadou THIAM | Simulation MQTT & Documentation | `feature/simulation-mqtt` |
 
 ---
 
@@ -48,7 +48,7 @@ senwatt/
 
 ### Étape 1 — Cloner le projet
 ```bash
-git clone https://github.com/[username]/senwatt.git
+git clone https://github.com/rassoul7/SenWatt.git
 cd senwatt
 ```
 
@@ -56,10 +56,10 @@ cd senwatt
 Crée le fichier `database/config.php` avec les identifiants partagés par M1 :
 ```php
 <?php
-$db_host = 'mysql-[compte].alwaysdata.net';
-$db_name = '[compte]_senwatt_db';
-$db_user = '[compte]_senwatt_user';
-$db_pass = 'mot_de_passe';
+$db_host = 'mysql-senwatt.alwaysdata.net';
+$db_name = 'senwatt_senwatt_db';
+$db_user = 'senwatt_senwatt_user';
+$db_pass = 'Mouss@Diallo7';
 
 $pdo = new PDO(
   "mysql:host=$db_host;dbname=$db_name;charset=utf8mb4",
@@ -91,7 +91,7 @@ python simulate_mqtt.py
 
 ### Étape 6 — Accéder au dashboard
 ```
-https://[compte].alwaysdata.net
+https://senwatt.alwaysdata.net
 ```
 - Email : `admin@senwatt.com`
 - Mot de passe : `senwatt2025`
@@ -102,10 +102,10 @@ https://[compte].alwaysdata.net
 
 | Paramètre | Valeur |
 |---|---|
-| Host | `[à compléter par M1]` |
+| Host | `ub0610cc.ala.eu-central-1.emqxsl.com` |
 | Port | `1883` |
 | Username | `senwatt` |
-| Password | `senwatt2025` |
+| Password | `Mouss@Diallo7` |
 
 ### Topics utilisés
 
