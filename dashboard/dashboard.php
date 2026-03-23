@@ -4,7 +4,7 @@ if (!isset($_SESSION['user_id'])) {
     header('Location: index.php');
     exit;
 }
-require_once '../database/config.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/database/config.php';
 
 // Récupérer les dernières mesures par prise
 $stmt = $pdo->prepare("

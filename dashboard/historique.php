@@ -4,7 +4,7 @@ if (!isset($_SESSION['user_id'])) {
     header('Location: index.php');
     exit;
 }
-require_once '../database/config.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/database/config.php';
 
 // Consommation par jour (7 derniers jours)
 $stmt = $pdo->prepare("
