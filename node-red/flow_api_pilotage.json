@@ -1,0 +1,462 @@
+[
+    {
+        "id": "7401d61c48f2f68e",
+        "type": "tab",
+        "label": "M3 - API REST & Pilotage SenWatt",
+        "disabled": false,
+        "info": "Flow M3 - Endpoints API REST + commandes ON/OFF MQTT\nMembre 3 - Tâche : API & pilotage"
+    },
+    {
+        "id": "fbe464090a37a306",
+        "type": "comment",
+        "z": "7401d61c48f2f68e",
+        "name": "=== ENDPOINT 1 : GET /api/mesures ===",
+        "info": "Retourne les dernières mesures de chaque prise d'un utilisateur",
+        "x": 200,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "4a1dbfe008e91b65",
+        "type": "http in",
+        "z": "7401d61c48f2f68e",
+        "name": "GET /api/mesures",
+        "url": "/api/mesures",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 140,
+        "y": 90,
+        "wires": [
+            [
+                "c4e24aec6dc9d8ae"
+            ]
+        ]
+    },
+    {
+        "id": "c4e24aec6dc9d8ae",
+        "type": "function",
+        "z": "7401d61c48f2f68e",
+        "name": "Prépare requête dernières mesures",
+        "func": "var user_id = parseInt(msg.req.query.user_id) || 1;\n\nmsg.topic = `\n  SELECT c1.prise_id, c1.nom_appareil, c1.tension, c1.courant,\n         c1.puissance, c1.energie_kwh, c1.cout_fcfa, c1.timestamp\n  FROM consommation c1\n  INNER JOIN (\n    SELECT prise_id, MAX(timestamp) as last_ts\n    FROM consommation\n    WHERE user_id = ${user_id}\n    GROUP BY prise_id\n  ) latest ON c1.prise_id = latest.prise_id\n          AND c1.timestamp = latest.last_ts\n  WHERE c1.user_id = ${user_id}\n  ORDER BY c1.prise_id\n`;\n\nmsg._user_id = user_id;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 380,
+        "y": 90,
+        "wires": [
+            [
+                "b152ae3200508f8c"
+            ]
+        ]
+    },
+    {
+        "id": "b152ae3200508f8c",
+        "type": "mysql",
+        "z": "7401d61c48f2f68e",
+        "mydb": "1e1fcb9d3a563c6a",
+        "name": "DB - Dernières mesures",
+        "x": 640,
+        "y": 90,
+        "wires": [
+            [
+                "87814cde970aadc4"
+            ]
+        ]
+    },
+    {
+        "id": "87814cde970aadc4",
+        "type": "function",
+        "z": "7401d61c48f2f68e",
+        "name": "Formate réponse JSON",
+        "func": "// Formate la réponse JSON propre\nvar result = {\n    status: 'success',\n    user_id: msg.user_id || 'user01',\n    count: msg.payload.length,\n    prises: msg.payload,\n    timestamp: new Date().toISOString()\n};\n\nmsg.payload = result;\nmsg.headers = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' };\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 880,
+        "y": 90,
+        "wires": [
+            [
+                "753eef2d9cb5f744"
+            ]
+        ]
+    },
+    {
+        "id": "753eef2d9cb5f744",
+        "type": "http response",
+        "z": "7401d61c48f2f68e",
+        "name": "Réponse /api/mesures",
+        "statusCode": "200",
+        "headers": {},
+        "x": 1100,
+        "y": 90,
+        "wires": []
+    },
+    {
+        "id": "3e581dab3fc8578d",
+        "type": "comment",
+        "z": "7401d61c48f2f68e",
+        "name": "=== ENDPOINT 2 : GET /api/historique ===",
+        "info": "Retourne l'historique des 24 dernières heures pour une prise",
+        "x": 200,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "f75bc00b0f6f4153",
+        "type": "http in",
+        "z": "7401d61c48f2f68e",
+        "name": "GET /api/historique",
+        "url": "/api/historique",
+        "method": "get",
+        "upload": false,
+        "x": 140,
+        "y": 230,
+        "wires": [
+            [
+                "c71ca56de573220d"
+            ]
+        ]
+    },
+    {
+        "id": "c71ca56de573220d",
+        "type": "function",
+        "z": "7401d61c48f2f68e",
+        "name": "Prépare requête historique 24h",
+        "func": "var user_id  = parseInt(msg.req.query.user_id) || 1;\nvar prise_id = msg.req.query.prise_id || null;\nvar heures   = parseInt(msg.req.query.heures) || 24;\n\nvar where = `WHERE user_id = ${user_id}\n  AND timestamp >= DATE_SUB(NOW(), INTERVAL ${heures} HOUR)`;\n\nif (prise_id) {\n    where += ` AND prise_id = '${prise_id}'`;\n}\n\nmsg.topic = `\n  SELECT prise_id, nom_appareil, tension, courant,\n         puissance, energie_kwh, cout_fcfa, timestamp\n  FROM consommation\n  ${where}\n  ORDER BY timestamp ASC\n  LIMIT 500\n`;\n\nmsg._user_id  = user_id;\nmsg._prise_id = prise_id;\nmsg._heures   = heures;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 380,
+        "y": 230,
+        "wires": [
+            [
+                "463df7dad7ba97b0"
+            ]
+        ]
+    },
+    {
+        "id": "463df7dad7ba97b0",
+        "type": "mysql",
+        "z": "7401d61c48f2f68e",
+        "mydb": "1e1fcb9d3a563c6a",
+        "name": "DB - Historique",
+        "x": 640,
+        "y": 220,
+        "wires": [
+            [
+                "db8ee3c4af9989e8"
+            ]
+        ]
+    },
+    {
+        "id": "db8ee3c4af9989e8",
+        "type": "function",
+        "z": "7401d61c48f2f68e",
+        "name": "Formate historique + stats",
+        "func": "var data = msg.payload;\n\nvar puissance_max = 0;\nvar cout_total    = 0;\nvar energie_max   = 0;\n\ndata.forEach(function(row) {\n    if ((row.puissance   || 0) > puissance_max) puissance_max = row.puissance;\n    if ((row.cout_fcfa   || 0) > cout_total)    cout_total    = row.cout_fcfa;\n    if ((row.energie_kwh || 0) > energie_max)   energie_max   = row.energie_kwh;\n});\n\nvar cout_mensuel_estime = Math.round(energie_max * 100 * 30);\n\nvar result = {\n    status: 'success',\n    user_id:  msg._user_id,\n    prise_id: msg._prise_id || 'toutes',\n    periode:  msg._heures + 'h',\n    stats: {\n        nb_mesures:          data.length,\n        puissance_max_w:     Math.round(puissance_max),\n        energie_kwh:         energie_max.toFixed(3),\n        cout_fcfa:           Math.round(cout_total),\n        cout_mensuel_estime: cout_mensuel_estime\n    },\n    mesures: data\n};\n\nmsg.payload = result;\nmsg.headers = {\n    'Content-Type': 'application/json',\n    'Access-Control-Allow-Origin': '*'\n};\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 880,
+        "y": 230,
+        "wires": [
+            [
+                "e61226b214c337bc"
+            ]
+        ]
+    },
+    {
+        "id": "e61226b214c337bc",
+        "type": "http response",
+        "z": "7401d61c48f2f68e",
+        "name": "Réponse /api/historique",
+        "statusCode": "200",
+        "headers": {},
+        "x": 1100,
+        "y": 230,
+        "wires": []
+    },
+    {
+        "id": "abd474e75dbd8aaa",
+        "type": "comment",
+        "z": "7401d61c48f2f68e",
+        "name": "=== ENDPOINT 3 : POST /api/commande (ON/OFF → MQTT) ===",
+        "info": "Reçoit une commande ON/OFF depuis le dashboard et la publie sur MQTT",
+        "x": 230,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "8bb75dc34c77a2fd",
+        "type": "http in",
+        "z": "7401d61c48f2f68e",
+        "name": "POST /api/commande",
+        "url": "/api/commande",
+        "method": "post",
+        "upload": false,
+        "skipBodyParsing": false,
+        "swaggerDoc": "",
+        "x": 140,
+        "y": 370,
+        "wires": [
+            [
+                "1f49bb31fdceed72"
+            ]
+        ]
+    },
+    {
+        "id": "1f49bb31fdceed72",
+        "type": "function",
+        "z": "7401d61c48f2f68e",
+        "name": "Valide & formate commande",
+        "func": "// Body attendu: { user_id, prise_id, commande }\n// Ex: { \"user_id\": \"user01\", \"prise_id\": \"clim_salon\", \"commande\": \"OFF\" }\nvar body = msg.payload;\n\nvar user_id  = body.user_id  || null;\nvar prise_id = body.prise_id || null;\nvar commande = body.commande || null;\n\n// Validation\nif (!user_id || !prise_id || !commande) {\n    msg.payload = { status: 'error', message: 'Champs requis: user_id, prise_id, commande' };\n    msg.statusCode = 400;\n    node.status({ fill: 'red', shape: 'ring', text: 'Commande invalide' });\n    return [null, msg];\n}\n\nif (commande !== 'ON' && commande !== 'OFF') {\n    msg.payload = { status: 'error', message: 'commande doit être ON ou OFF' };\n    msg.statusCode = 400;\n    return [null, msg];\n}\n\n// Topic MQTT de commande: senwatt/{user_id}/{prise_id}/cmd\nvar topic = `senwatt/${user_id}/${prise_id}/cmd`;\n\n// Payload MQTT\nvar mqtt_payload = JSON.stringify({\n    commande: commande,\n    user_id:  user_id,\n    prise_id: prise_id,\n    timestamp: new Date().toISOString()\n});\n\n// Stocke les infos pour la réponse\nmsg._user_id  = user_id;\nmsg._prise_id = prise_id;\nmsg._commande = commande;\nmsg._topic    = topic;\n\n// Prépare message MQTT\nmsg.topic   = topic;\nmsg.payload = mqtt_payload;\nmsg.qos     = 1;\nmsg.retain  = false;\n\nnode.status({ fill: 'green', shape: 'dot', text: commande + ' → ' + topic });\nreturn [msg, null];",
+        "outputs": 2,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 380,
+        "y": 370,
+        "wires": [
+            [
+                "80d0ed16928b1f69",
+                "dcdf6e45bec1fc16"
+            ],
+            [
+                "fe9a13164afd0a1c"
+            ]
+        ]
+    },
+    {
+        "id": "80d0ed16928b1f69",
+        "type": "mqtt out",
+        "z": "7401d61c48f2f68e",
+        "name": "MQTT → senwatt/.../cmd",
+        "topic": "",
+        "qos": "1",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "broker_emqx",
+        "x": 680,
+        "y": 340,
+        "wires": []
+    },
+    {
+        "id": "dcdf6e45bec1fc16",
+        "type": "function",
+        "z": "7401d61c48f2f68e",
+        "name": "Prépare réponse succès",
+        "func": "var reponse = {\n    status:   'success',\n    message:  'Commande envoyée avec succès',\n    user_id:  msg._user_id,\n    prise_id: msg._prise_id,\n    commande: msg._commande,\n    topic:    msg._topic,\n    timestamp: new Date().toISOString()\n};\n\nmsg.payload    = reponse;\nmsg.statusCode = 200;\nmsg.headers    = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' };\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 680,
+        "y": 410,
+        "wires": [
+            [
+                "90c8c2753ffd5923"
+            ]
+        ]
+    },
+    {
+        "id": "90c8c2753ffd5923",
+        "type": "http response",
+        "z": "7401d61c48f2f68e",
+        "name": "Réponse /api/commande",
+        "statusCode": "",
+        "headers": {},
+        "x": 920,
+        "y": 410,
+        "wires": []
+    },
+    {
+        "id": "fe9a13164afd0a1c",
+        "type": "http response",
+        "z": "7401d61c48f2f68e",
+        "name": "Réponse erreur 400",
+        "statusCode": "400",
+        "headers": {},
+        "x": 680,
+        "y": 460,
+        "wires": []
+    },
+    {
+        "id": "9b4401b8797137dc",
+        "type": "comment",
+        "z": "7401d61c48f2f68e",
+        "name": "=== ENDPOINT 4 : GET /api/alertes ===",
+        "info": "Retourne les alertes non lues d'un utilisateur",
+        "x": 180,
+        "y": 540,
+        "wires": []
+    },
+    {
+        "id": "e920381f601c90b2",
+        "type": "http in",
+        "z": "7401d61c48f2f68e",
+        "name": "GET /api/alertes",
+        "url": "/api/alertes",
+        "method": "get",
+        "upload": false,
+        "x": 140,
+        "y": 590,
+        "wires": [
+            [
+                "109d6fa9ac945200"
+            ]
+        ]
+    },
+    {
+        "id": "109d6fa9ac945200",
+        "type": "function",
+        "z": "7401d61c48f2f68e",
+        "name": "Prépare requête alertes",
+        "func": "var user_id  = parseInt(msg.req.query.user_id) || 1;\nvar prise_id = msg.req.query.prise_id || null;\n\nvar where = `WHERE user_id = ${user_id}`;\nif (prise_id) {\n    where += ` AND prise_id = '${prise_id}'`;\n}\n\nmsg.topic = `\n  SELECT id, prise_id, type_alerte, message, timestamp\n  FROM alertes\n  ${where}\n  ORDER BY timestamp DESC\n  LIMIT 20\n`;\nmsg._user_id = user_id;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 370,
+        "y": 590,
+        "wires": [
+            [
+                "65d7e671943b44f4"
+            ]
+        ]
+    },
+    {
+        "id": "65d7e671943b44f4",
+        "type": "mysql",
+        "z": "7401d61c48f2f68e",
+        "mydb": "1e1fcb9d3a563c6a",
+        "name": "DB - Alertes",
+        "x": 620,
+        "y": 590,
+        "wires": [
+            [
+                "8e634107a166ff30"
+            ]
+        ]
+    },
+    {
+        "id": "8e634107a166ff30",
+        "type": "function",
+        "z": "7401d61c48f2f68e",
+        "name": "Formate alertes JSON",
+        "func": "var result = {\n    status: 'success',\n    user_id: msg.user_id,\n    nb_alertes: msg.payload.length,\n    alertes: msg.payload\n};\nmsg.payload = result;\nmsg.headers = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' };\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 840,
+        "y": 590,
+        "wires": [
+            [
+                "3d2de65d06bac6c3"
+            ]
+        ]
+    },
+    {
+        "id": "3d2de65d06bac6c3",
+        "type": "http response",
+        "z": "7401d61c48f2f68e",
+        "name": "Réponse /api/alertes",
+        "statusCode": "200",
+        "headers": {},
+        "x": 1060,
+        "y": 590,
+        "wires": []
+    },
+    {
+        "id": "2f846abbbfcd696e",
+        "type": "debug",
+        "z": "7401d61c48f2f68e",
+        "name": "Debug M3",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "x": 640,
+        "y": 660,
+        "wires": []
+    },
+    {
+        "id": "1e1fcb9d3a563c6a",
+        "type": "MySQLdatabase",
+        "name": "mysqlalwaysdata1",
+        "host": "mysql-senwatt.alwaysdata.net",
+        "port": "3306",
+        "db": "senwatt_db",
+        "tz": "",
+        "charset": "UTF8"
+    },
+    {
+        "id": "broker_emqx",
+        "type": "mqtt-broker",
+        "name": "EMQX Cloud SenWatt",
+        "broker": "ub0610cc.ala.eu-central-1.emqxsl.com",
+        "port": "8883",
+        "tls": "461dc437bdc6a7c7",
+        "clientid": "nodered_m3_senwatt",
+        "autoConnect": true,
+        "usetls": true,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "461dc437bdc6a7c7",
+        "type": "tls-config",
+        "name": "",
+        "cert": "",
+        "key": "",
+        "ca": "",
+        "certname": "",
+        "keyname": "",
+        "caname": "emqxsl-ca.crt",
+        "servername": "",
+        "verifyservercert": false,
+        "alpnprotocol": ""
+    },
+    {
+        "id": "a4620aecab884103",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-node-mysql": "2.0.0"
+        }
+    }
+]
