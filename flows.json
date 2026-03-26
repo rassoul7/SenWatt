@@ -1,0 +1,160 @@
+[
+    {
+        "id": "43f1493df828e8fb",
+        "type": "tab",
+        "label": "SenWatt - Flow Données",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "0aeaa7b99cd9a062",
+        "type": "json",
+        "z": "43f1493df828e8fb",
+        "name": "",
+        "property": "payload",
+        "action": "obj",
+        "pretty": false,
+        "x": 350,
+        "y": 160,
+        "wires": [
+            [
+                "9e553a8d404dc9a4"
+            ]
+        ]
+    },
+    {
+        "id": "9e553a8d404dc9a4",
+        "type": "function",
+        "z": "43f1493df828e8fb",
+        "name": "calcul",
+        "func": "// Données reçues du capteur\nvar user_id     = msg.payload.user_id;\nvar prise_id    = msg.payload.prise_id;\nvar tension     = 230;\nvar courant     = msg.payload.courant;\n\n// Calcul de la puissance en Watts\nvar puissance_w = tension * courant;\n\n// Calcul énergie en kWh (mesure toutes les 30 secondes)\nvar energie_kwh = (puissance_w * (30 / 3600)) / 1000;\n\n// Estimation coût SENELEC (100 F CFA par kWh)\nvar cout_fcfa = energie_kwh * 100;\n\n// Détection alerte (seuil : 3000W)\nvar alerte = puissance_w > 3000 ? 1 : 0;\n\n// Détection délestage (courant = 0)\nvar delesatage = courant === 0 ? 1 : 0;\n\n// On prépare le message pour le nœud MySQL\nmsg.payload = {\n    user_id     : user_id,\n    prise_id    : prise_id,\n    puissance_w : puissance_w,\n    energie_kwh : energie_kwh,\n    cout_fcfa   : cout_fcfa,\n    alerte      : alerte,\n    delestage   : delesatage,\n    etat        : courant > 0 ? \"ON\" : \"OFF\"\n};\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 510,
+        "y": 220,
+        "wires": [
+            [
+                "9a986c324c9b9d77",
+                "d393d43bf7db343b"
+            ]
+        ]
+    },
+    {
+        "id": "9a986c324c9b9d77",
+        "type": "debug",
+        "z": "43f1493df828e8fb",
+        "name": "debug 6",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 660,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "d393d43bf7db343b",
+        "type": "mysql",
+        "z": "43f1493df828e8fb",
+        "mydb": "f6dddc46729cd02c",
+        "name": "",
+        "x": 650,
+        "y": 100,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "2f2cafddc3fe37cc",
+        "type": "mqtt in",
+        "z": "43f1493df828e8fb",
+        "name": "",
+        "topic": "senwatt/#",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "c53d588d486e3630",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 140,
+        "y": 160,
+        "wires": [
+            [
+                "0aeaa7b99cd9a062"
+            ]
+        ]
+    },
+    {
+        "id": "f6dddc46729cd02c",
+        "type": "MySQLdatabase",
+        "name": "data_base",
+        "host": "mysql-senwatt.alwaysdata.net",
+        "port": "3306",
+        "db": "senwatt_db",
+        "tz": "",
+        "charset": "UTF8"
+    },
+    {
+        "id": "c53d588d486e3630",
+        "type": "mqtt-broker",
+        "name": "",
+        "broker": "ub0610cc.ala.eu-central-1.emqxsl.com",
+        "port": "8883",
+        "tls": "a6956b47b3793d2e",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": true,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "a6956b47b3793d2e",
+        "type": "tls-config",
+        "name": "",
+        "cert": "",
+        "key": "",
+        "ca": "",
+        "certname": "",
+        "keyname": "",
+        "caname": "emqxsl-ca.crt",
+        "servername": "",
+        "verifyservercert": true,
+        "alpnprotocol": ""
+    },
+    {
+        "id": "ade5e7177ffd5e7d",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-node-mysql": "2.0.0"
+        }
+    }
+]
